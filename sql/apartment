@@ -1,0 +1,26 @@
+
+Multiple Apartments: Write a SQL query to get a list of tenants who are renting more than one
+apartment.
+
+select TenantID, count(AptID) from AptTenants
+group by TenantID
+having count(AptID) > 1
+
+Open Requests: Write a SQL query to get a list of all buildings and the number of open requests
+(Requests in which status equals 'Open' ).
+Hints:#411
+
+select BuildingID, sum(case when req == NULL the 0 else req end) from Apartments
+ join
+on Apartments.AptID = r.APtId
+group by BuildingID
+
+
+
+select distinct s.name from
+orders o
+join customer c
+on o.cust_id = c.id
+join salesperson s
+on s.id = o.cust_id
+where c.name = 'samsonic'
