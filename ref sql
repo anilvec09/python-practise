@@ -1,0 +1,72 @@
+# Question 1:
+# -- What percent of all products in the grocery chain's catalog# -- are both low fat and recyclable?
+SELECT
+    (
+    COUNT(CASE WHEN is_low_fat_flg = 'y' AND is_recyclable_flg = 'Y' THEN product_id ELSE NULL END  ) * 100/
+    COUNT(DISTINCT product_id)
+    ) AS  perc
+FROM   products p
+JOIN   product_classes pc
+ON     p.product_class_id = pc.product_class_id
+WHERE pc.product_category = 'grocery chain'
+
+Question 2:
+ What are the top five (ranked in decreasing order)single-channel media types that correspond to the most moneythe grocery chain had spent on its promotional campaigns?
+SELECT
+    PM.promotion_name
+FROM sales s
+JOIN products p
+ON   s.product_id = p.product_id
+JOIN product_classes pc
+ON     p.product_class_id = pc.product_class_id
+JOIN   promotion pm
+ON   s.promotion_id = pm.promotion_id
+WHERE pc.product_category = 'grocery chain'
+AND    pm.media_type = 'single-channel'
+GROUP BY PM.promotion_name
+ORDER BY SUM(COST) DESC
+LIMIT 5
+
+
+
+# Question 3:
+# -- % Of sales that had a valid promotion, the VP of marketing# -- wants to know what % of transactions occur on either# -- the very first day or the very last day of a promotion campaign.
+
+SELECT
+    COUNT(CASE WHEN transaction_date = pm.start_date OR transaction_date = pm.end_date THEN product_id ELSE NULL END )*100/
+    COUNT(*)
+FROM sales s
+LEFT JOIN promotion pm
+ON   s.promotion_id = pm.promotion_id
+WHERE s.promotion_id is NOT NULL
+
+Question 4:
+    We are considering running a promo across brands. We want to target  customers who have bought products from two specific brands. Can you find out which customers have bought products from both the“Fort West" and the "Golden" brands?
+
+SELECT
+    DISTINCT
+    c.first_name,
+    c.last_name
+FROM sales s
+join customer c
+ON s.customer_id = c.customer_id
+JOIN products p
+ON s.product_id = p.product_id
+WHERE P.brand_name in (“Fort West" , "Golden" )
+GROUP BY 1,2
+HAVING COUNT(DISTINCT brand_name) = 2
+
+DATE SYNTAX:
+select
+cast(mnth || '-' || da || '-' || yr as date) from
+(
+select
+    extract(month from start_date) as mnth,
+    extract(week from start_date) as wk,
+    extract(year from start_date) as yr,
+    extract(day from start_date) as da,
+    start_date,
+    start_date + 1,
+    start_date - 30
+from projects
+  ) a
