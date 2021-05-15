@@ -1,0 +1,152 @@
+products :                      sales:
+product_id : int                product_id : int
+product_class_id : int          store_id : int
+brand_name : varchar            customer_id : int
+product_name : varchar          promotion_id : int
+is_low_fat_flg  : TINYINT       store_sales : decimal
+is_recyclable_flg  : TINYINT    store_cost : decimal
+is_low_fat_flg  : TINYINT       units_sold : decimal
+gross_weight : DECIMAL          transaction_date : date
+net_weight : DECIMAL
+
+promotion:                         product_classes:
+promotion_id : int                  product_class_id : int
+promotion_name : varchar            product_subcategory : varchar
+media_type : varchar                product_category : varchar
+cost : decimal                      product_department : varchar
+star_date : date                    product_family : varchar
+end_date : date
+
+
+# Question 1:
+# -- What percent of all products in the grocery chain's catalog
+# -- are both low fat and recyclable?
+SELECT
+    (
+    COUNT(CASE WHEN is_low_fat_flg = 'y' AND is_recyclable_flg = 'Y' THEN product_id ELSE NULL END  ) * 100/
+    COUNT(DISTINCT product_id)
+    ) AS  perc
+FROM   products p
+JOIN   product_classes pc
+ON     p.product_class_id = pc.product_class_id
+WHERE pc.product_category = 'grocery chain'
+
+SELECT
+      ROUND(
+      COUNT(DISTINCT CASE WHEN salary < 25000 THEN e.id ELSE NULL END) *100/
+      COUNT(DISTINCT e.id),2) AS  eng_per
+FROM employees e
+JOIN departments d
+ON   e.department_id = d.id
+WHERE d.name = 'Engineering'
+
+Question 2:
+ What are the top five (ranked in decreasing order)
+ single-channel media types that correspond to the most money
+the grocery chain had spent on its promotional campaigns?
+
+SELECT
+    PM.promotion_name
+FROM sales s
+JOIN products p
+ON   s.product_id = p.product_id
+JOIN product_classes pc
+ON     p.product_class_id = pc.product_class_id
+JOIN   promotion pm
+ON   s.promotion_id = pm.promotion_id
+WHERE pc.product_category = 'grocery chain'
+AND    pm.media_type = 'single-channel'
+GROUP BY PM.promotion_name
+ORDER BY SUM(COST) DESC
+LIMIT 5
+
+
+SELECT
+    p.id
+FROM employees_projects ep
+JOIN projects p
+ON   ep.project_id = p.id
+JOIN employees e
+ON   ep.employee_id = e.id
+JOIN departments d
+ON   e.department_id = d.id
+WHERE d.name = 'Reporting'
+GROUP BY p.id
+ORDER BY sum(salary) desc
+limit 2
+
+
+# Question 3:
+# -- % Of sales that had a valid promotion, the VP of marketing
+# -- wants to know what % of transactions occur on either
+# -- the very first day or the very last day of a promotion campaign.
+
+SELECT
+    COUNT(CASE WHEN transaction_date = pm.start_date OR transaction_date = pm.end_date THEN product_id ELSE NULL END )*100/
+    COUNT(*)
+FROM sales s
+LEFT JOIN promotion pm
+ON   s.promotion_id = pm.promotion_id
+WHERE s.promotion_id is NOT NULL
+
+SELECT
+      ROUND(COUNT(CASE WHEN p.start_date  between '2009-01-01' and '2009-12-31' THEN e.id ELSE NULL END) * 100/
+      COUNT(DISTINCT e.id),2)
+FROM employees e
+LEFT JOIN employees_projects ep
+ON   ep.employee_id = e.id
+LEFT JOIN projects p
+ON   ep.project_id = p.id;
+
+Question 4:
+    We are considering running a promo across brands. We want to target
+    customers who have bought products from two specific brands.
+    Can you find out which customers have bought products from both the
+    “Fort West" and the "Golden" brands?
+
+SELECT
+    DISTINCT
+    c.first_name,
+    c.last_name
+FROM sales s
+join customer c
+ON s.customer_id = c.customer_id
+JOIN products p
+ON s.product_id = p.product_id
+WHERE P.brand_name in (“Fort West" , "Golden" )
+GROUP BY 1,2
+HAVING COUNT(DISTINCT brand_name) = 2
+
+
+SELECT
+    s.name
+FROM orders o
+JOIN company c
+ON   o.com_id = c.com_id
+JOIN salesperson s
+ON   o.sales_id = s.sales_id
+WHERE c.name in ('RED' , 'YELLOW')
+GROUP BY s.name
+having count(distinct c.name) = 2
+
+
+select
+cast(mnth || '-' || da || '-' || yr as date) from
+(
+select
+    extract(month from start_date) as mnth,
+    extract(week from start_date) as wk,
+    extract(year from start_date) as yr,
+    extract(day from start_date) as da,
+    start_date,
+    start_date + 1,
+    start_date - 30
+from projects
+  ) a
+
+Interview Questions
+
+SQL questions on promotions, sales schema.
+what %age of products have both non fat and trans fat.
+find top 5 sales products having promotions
+what %age of sales happened on first and last day of the promotion

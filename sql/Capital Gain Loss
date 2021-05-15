@@ -1,0 +1,16 @@
+--https://leetcode.com/problems/capital-gainloss/
+
+SELECT bname as stock_name, SUM(sprice - bprice) as capital_gain_loss
+FROM
+(SELECT a.stock_name as bname,  a.operation_day as bday, a.price as bprice, b.price as sprice, MIN(b.operation_day)
+FROM Stocks a
+LEFT JOIN Stocks b
+ON a.stock_name = b.stock_name AND a.operation != b.operation AND a.operation_day < b.operation_day
+WHERE a.operation = 'Buy'
+GROUP BY bname, bday) tmp
+GROUP BY bname;
+
+select stock_name,
+sum(case when operation = 'Buy' then (price* -1) else price end) capital_gain_loss
+from stocks
+group by stock_name

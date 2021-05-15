@@ -1,0 +1,25 @@
+
+
+https://leetcode.com/problems/calculate-salaries/
+
+# Write your MySQL query statement below
+SELECT
+    s1.company_id,
+    s1.employee_id,
+    s1.employee_name,
+    ROUND(((100-s2.tax_per)*s1.salary)/100,0) AS salary
+FROM Salaries s1
+join
+(
+SELECT
+    company_id,
+    CASE
+    WHEN max(salary) < 1000 THEN 0
+    WHEN max(salary) BETWEEN 1000 and 10000 THEN 24
+    WHEN max(salary) >  10000 THEN  49
+    END
+    AS  tax_per
+FROM Salaries
+GROUP BY company_id
+) s2
+on s1.company_id = s2.company_id
