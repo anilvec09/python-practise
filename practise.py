@@ -1,87 +1,34 @@
-# def maxarray(s):
-#     s.sort()
-#     return s[-1]
-#
-#
-# assert maxarray([1,4,6,8,9,2,8]) == 9
-# assert maxarray([1,4,6,1888,99,2,8]) == 1888
-#
-#
-# def unmatch(s1,s2):
-#     if not s1 or not s2:
-#         return
-#     output = []
-#     for i in s1.split():
-#         if i not in s2.split():
-#             output.append(i)
-#
-#     for i in s2.split():
-#         if i not in s1.split():
-#             output.append(i)
-#     return output
-#
-#
-# assert unmatch("First this is first string", "second this is second string") == ['First','first','second', 'second']
-#
-#
-# def avgwordlength(s):
-#
-#     if not s:
-#         return
-#     length = 0
-#
-#     for i in s.split():
-#         length += len(i)
-#
-#     return (length/len(s.split()))
-#
-#
-# assert avgwordlength("im go od bo ye") == 2
-# assert avgwordlength("i am good bo y") == 10/5
-#
+increment = spark.read.json("s3a://bucket/landing_2020_01_02")   # name: str, id: int, content: str, etl_timestamp: timestamp
+
+1. Separate duplicate rows by  name column for each id, and rows that contain non-matching braces in "content" field;
+content = " .... (())()() ..."
+
+increment.createOrReplaceTempView("inc")
+increment_latest = spark.sql("""
+select name,id,content,etl_time_stamp
+(
+select 
+name,id,content, etl_time_stamp,
+ROW_NUMBER() OVER (PARRTITION BY id ORDER BY etl_timestamp DESC) as rnk
+from inc
+) a 
+where a.rnk=1
+""")
+
+1.1 Separated "bad" data should be written to s3 - as a single csv file. - bad_df
+
+increment_dups  = increment.excepAll(increment_latest)
 
 
-# def monotic(s):
-#     try:
-#         if not s:
-#             return
-#
-#         r,n = s
-#         r.sort(reverse=True)
-#         n.sort()
-#
-#         print(s,r,n)
-#         if s == r or s == n:
-#             return True
-#         else:
-#             return False
-#     except:
-#         print("I am here")
-#         return False
-#
-#
-# assert monotic([1,2,4,5,8,9]) == True
-# assert monotic([1,3,2,5,8,6]) == False
-# assert monotic([None,1]) == False
-# monotic([1,2,4,5,8,9])
+1.2 Filtered data without duplicates and invalid content - cleansed_df
 
 
 
-def validip(s):
-    if not s:
-        return
+2. Merge cleansed e into target data
+increment_dups.write.save("targetpath",format=parquet,mode=overwrite)
+# etl_date = date(timestamp)
+target_dataset = spark.read.parquet("s3a://bucket/full_dataset")  # name: str, id: int, content: str, etl_timestamp: timestamp, etl_date: date
 
-    print(s.count('.'))
-    if s.count('.') != 3:
-        return False
+3. In target_dataset - overwrite old data for each id - with new content field.
 
-    for i in s.split('.'):
-        if i > 255 or len(i) >3 or i[0] ==0 :
-            return False
-        else:
-            return True
-
-
-# assert validip("10.255.123.12") == True
-# assert validip("0.00.00.123") == False
-validip("0.00.00.123")
+4. Write target dataset back to "s3a://bucket/full_dataset"
